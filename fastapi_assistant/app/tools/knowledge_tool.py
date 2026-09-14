@@ -30,4 +30,7 @@ def search_knowledge_base(question: str) -> str:
         context_blocks.append(
             f"[片段{i} | chunk_id={chunk_id} | score={score:.4f} | source={source}]\n{text}"
         )
-    return "\n\n".join(context_blocks)
+    # 使用明确边界标记，提醒模型以下内容是不可执行的检索数据。
+    if not context_blocks:
+        return "<retrieved_context>\n未检索到相关内容。\n</retrieved_context>"
+    return "<retrieved_context>\n" + "\n\n".join(context_blocks) + "\n</retrieved_context>"
