@@ -1,80 +1,68 @@
-# Atguigu LangChain Integrated Assistant
+# Knowledge Assistant
 
-这是把课程中的 3 个完整实战项目合成后的单一项目：
+基于 Python、LangChain 和 Milvus 的知识库智能助手，将多轮对话、语义检索和工具调用整合在同一条问答流程中。提供命令行入口与 FastAPI 后端，可用于客服知识查询及问答应用的后端接入。
 
-- 第4章：多轮对话聊天机器人
-- 第7章：多功能智能助手
-- 第10章：Atguigu Assistant 客服知识库
+## 核心功能
 
-## 整合后的职责
+- RAG 知识库问答：读取 TXT 文档，递归切分并使用 BGE-M3 生成向量；基于 Milvus 召回 Top-5 片段。
+- Agent 工具调用：接入知识库检索、计算、时间、天气、货币换算和信息搜索六类工具。
+- 多轮对话：保存用户问题与最终回答，通过消息窗口控制上下文。
+- HTTP 接口：提供聊天、会话创建与删除、健康检查接口，包含 Pydantic 校验和自动接口文档。
+- 会话隔离：通过 session_id 管理独立历史，同一会话使用锁串行处理请求。
+- 独立建库：FastAPI 版本将离线建库和在线检索分离，服务重启无需重复生成文档向量。
 
-- **第4章**：提供普通 user/assistant 消息历史与最近 N 轮窗口记忆。
-- **第7章**：作为主框架，使用 `create_agent()` + Tools 决定调用天气、计算、时间、货币、模拟信息搜索等工具。
-- **第10章**：保留 TextLoader → RecursiveCharacterTextSplitter → Embedding → Milvus → Top-K Retrieval 流程，并把检索能力封装成 `search_knowledge_base` Tool 接入第7章 Agent。
+## 技术栈
 
-## 为什么 RAG 要改成 Tool
+Python 3.11 · LangChain · FastAPI · Pydantic · Milvus · BGE-M3 · OpenAI 兼容 API
 
-第10章原案例是“检索 → 拼接上下文 → 单独 Agent 生成回答”。合并后，为了让一个 Agent 同时拥有业务工具和知识库能力，本项目只做一个必要的整合改造：**将第10章 `retrieve()` 的结果封装为 `search_knowledge_base` 工具，并加入第7章的工具列表。**
-
-这样用户可以在同一个多轮会话里混合提问，例如：
-
-- “北京今天天气怎么样？” → `get_weather`
-- “100 美元等于多少人民币？” → `convert_currency`
-- “基础版支持多少成员？” → `search_knowledge_base`
-- “先告诉我基础版价格，再帮我算 3 个用户一个月多少钱。” → 先 RAG，再 Calculator
-
-## 关于第4章窗口记忆的整合方式
-
-第4章的 `keep_recent_messages()` 默认把每轮看成 `user + assistant` 两条消息；但 Agent 工具调用过程中会产生额外的 tool-call / ToolMessage。
-
-因此最终项目只持久化：
-
-1. 用户原始问题
-2. Agent 最终回答
-
-每次新请求前，再对这两类普通对话消息应用最近 N 轮窗口。这样保留第4章的窗口记忆思路，同时不会从中间切断 Agent 的工具调用消息链。
-
-## 目录
+## 项目结构
 
 ```text
-atguigu_langchain_integrated_assistant/
-├── main.py              # 运行入口
-├── assistant.py         # Agent + 多轮会话整合
-├── business_tools.py    # 第7章 5 个工具
-├── rag_tool.py          # 第10章 RAG + Milvus + RAG Tool
-├── memory.py            # 第4章 keep_recent_messages
-├── config.py            # 统一配置
-├── knowledge.txt        # 课件 Atguigu Assistant 知识库内容重建版
-├── .env.example
-├── requirements.txt
-└── SOURCE_MAPPING.md
+.
+├── main.py                 # 命令行入口
+├── assistant.py            # Agent 与会话历史
+├── business_tools.py       # 业务工具
+├── rag_tool.py             # 知识库构建与检索工具
+├── memory.py               # 历史窗口
+├── config.py               # 命令行配置
+├── knowledge.txt           # 示例知识库
+├── .env.example            # 配置模板
+└── fastapi_assistant/      # HTTP 服务版本
 ```
 
-## 环境准备
+## 启动 FastAPI 版本
 
-1. Python 环境安装依赖：
-
-```bash
-pip install -r requirements.txt
+```powershell
+conda activate agent
+cd fastapi_assistant
+python -m pip install -r requirements.txt
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-2. 将 `.env.example` 复制为 `.env`，填写课件使用的模型与 Embedding API 配置。
+填写 `.env` 中的聊天模型、Embedding 和 Milvus 配置。聊天模型需支持工具调用。
 
-3. 按第10章案例准备 Milvus，默认连接：
-
-```text
-http://localhost:19530
+```powershell
+# 首次使用或文档更新后执行，会重建同名集合
+python -m scripts.build_knowledge_base
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-4. 运行：
+访问 `http://127.0.0.1:8000/docs`，先创建会话，再使用返回的 ID 调用聊天接口。详见 [FastAPI 使用说明](fastapi_assistant/README.md)。
 
-```bash
-python main.py
+## 启动命令行版本
+
+```powershell
+conda activate agent
+python -m pip install -r requirements.txt
+python -X utf8 main.py
 ```
 
-## 说明
+输入 `reset` 清空会话，输入 `quit` 退出。命令行版本每次启动都会重建知识库集合。
 
-- `knowledge.txt` 是依据已上传第10章课件中案例展示出的知识库内容重建的运行素材；原始课程资产 `knowledge.txt` 本身并未单独上传。
-- 第7章“实战：多功能智能助手”本身使用的是 5 个 Tool + `create_agent` + 对话历史，并没有在这个实战段落中直接使用 Pydantic 结构化输出或 Middleware。因此本次合并没有为了“显得更复杂”而擅自加入它们。
-- 第7章 Calculator 示例使用受限 `eval()`，这里按课件逻辑保留；它适合作为学习 Demo，不应直接当作生产环境的任意表达式执行方案。
-- 第10章案例会在启动时删除并重建同名 Milvus collection，本项目也保留该学习版行为。
+## 当前实现边界
+
+- 天气、汇率及产品/新闻搜索使用预设数据，不是实时第三方服务。
+- 会话保存在进程内存中，重启丢失，不支持多进程共享。
+- 计算工具使用受限 eval，后端尚未实现身份认证和请求限流。
+- 示例知识库中的套餐、权限与退款规则属于虚构产品资料。
+- 密钥只保存在本地 `.env`，不要提交到版本库。

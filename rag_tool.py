@@ -24,7 +24,7 @@ embed_model = None
 # 返回：None；同时设置模块级 client 与 embed_model，供后续检索复用。
 # 副作用：删除同名集合中的原有数据；文档文本会发送到 Embedding 服务。
 def init_knowledge_base() -> None:
-    """按第10章 Atguigu Assistant 案例初始化并写入 Milvus。"""
+    """按知识库配置初始化并写入 Milvus。"""
     global client, embed_model
 
     # 1. 初始化 Milvus
@@ -34,7 +34,7 @@ def init_knowledge_base() -> None:
         client.create_database(db_name=DB_NAME)
     client.use_database(db_name=DB_NAME)
 
-    # 课程案例每次运行会重建 collection，便于学习时保证数据一致。
+    # 当前实现每次运行会重建 collection，便于学习时保证数据一致。
     if client.has_collection(collection_name=COLLECTION_NAME):
         client.drop_collection(collection_name=COLLECTION_NAME)
 
@@ -119,13 +119,13 @@ def retrieve(question: str, k: int = 5):
 # 注意：本工具只检索资料，不直接生成最终回答，也不执行退款、开票等业务操作。
 @tool
 def search_knowledge_base(question: str) -> str:
-    """查询 Atguigu Assistant 客服知识库。
+    """查询 团队知识平台 客服知识库。
 
-    当用户询问 Atguigu Assistant 的套餐、额度、成员权限、数据保留、退款、发票、
+    当用户询问 团队知识平台 的套餐、额度、成员权限、数据保留、退款、发票、
     企业版支持等产品/客服问题时使用本工具。
 
     Args:
-        question: 用户关于 Atguigu Assistant 产品或客服规则的问题。
+        question: 用户关于 团队知识平台 产品或客服规则的问题。
     Returns:
         Milvus 检索到的 Top-K 知识片段及其来源信息。
     """

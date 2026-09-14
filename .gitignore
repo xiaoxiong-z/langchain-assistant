@@ -9,3 +9,6 @@ venv/
 .vscode/
 *.log
 .pytest_cache/
+/*_langchain_fastapi_assistant/
+
+fastapi_assistant_legacy/

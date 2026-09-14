@@ -7,7 +7,6 @@ def keep_recent_messages(messages, max_pairs=3):
     """
     保留最近的 N 轮对话。
 
-    来源：第4章 1.6.2/1.6.3 的窗口记忆写法。
     每轮 = user + assistant；system 消息始终保留。
     """
     system_msgs = [m for m in messages if m.get("role") == "system"]

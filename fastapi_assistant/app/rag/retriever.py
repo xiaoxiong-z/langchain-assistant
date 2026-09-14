@@ -13,7 +13,7 @@ from app.core.config import (
 )
 
 
-class AtguiguRetriever:
+class KnowledgeRetriever:
     """只负责在线检索，不负责重新建库。"""
 
     # 作用：建立尚未连接的检索器初始状态；参数：仅 self。
@@ -85,4 +85,4 @@ class AtguiguRetriever:
         return results[0]
 
 
-retriever = AtguiguRetriever()
+retriever = KnowledgeRetriever()

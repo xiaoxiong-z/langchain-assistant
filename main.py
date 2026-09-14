@@ -7,13 +7,13 @@ from rag_tool import init_knowledge_base
 # 参数：无；返回：None；通过标准输入读取问题，向终端打印结果。
 # 启动时重建知识库，再创建有状态助手。
 def main():
-    print("正在初始化 Atguigu Assistant 知识库（Milvus + Embedding）...")
+    print("正在初始化 团队知识平台 知识库（Milvus + Embedding）...")
     init_knowledge_base()
 
     assistant = SmartAssistant()
 
     print("=" * 56)
-    print("🤖 小谷姐姐：多轮对话 + 多功能 Agent + RAG 客服知识库")
+    print("🤖 智能助手：多轮对话 + 多功能 Agent + RAG 客服知识库")
     print("=" * 56)
     print("我可以帮你：")
     print(" 🌤 查询天气")
@@ -21,7 +21,7 @@ def main():
     print(" ⏰ 时间查询")
     print(" 💱 货币转换")
     print(" 🔍 产品 / 新闻模拟信息搜索")
-    print(" 📚 Atguigu Assistant 客服知识库问答")
+    print(" 📚 团队知识平台 客服知识库问答")
     print(f"\n输入 '{EXIT_WORD}' 退出，输入 '{RESET_WORD}' 重置对话\n")
 
     while True:
@@ -40,7 +40,7 @@ def main():
             continue
 
         response = assistant.chat(user_input)
-        print(f"🤖 小谷姐姐: {response}")
+        print(f"🤖 智能助手: {response}")
 
 
 if __name__ == "__main__":

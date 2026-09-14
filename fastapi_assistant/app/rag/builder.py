@@ -25,7 +25,7 @@ from app.core.config import (
 def build_knowledge_base() -> int:
     """离线构建知识库。
 
-    保留第10章案例的核心链路：
+    知识库构建链路：
     TextLoader -> RecursiveCharacterTextSplitter -> Embedding -> Milvus upsert。
     """
     if not KNOWLEDGE_FILE.exists():

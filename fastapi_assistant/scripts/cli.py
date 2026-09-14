@@ -12,7 +12,7 @@ def main():
     assistant = AssistantService()
     history: list[dict[str, str]] = []
 
-    print("小谷姐姐 CLI，输入 quit 退出，reset 清空历史。")
+    print("智能助手 CLI，输入 quit 退出，reset 清空历史。")
     while True:
         question = input("\n👤 你: ").strip()
         if question.lower() == "quit":
@@ -31,7 +31,7 @@ def main():
                 {"role": "assistant", "content": answer},
             ]
         )
-        print(f"🤖 小谷姐姐: {answer}")
+        print(f"🤖 智能助手: {answer}")
         if tools_used:
             print(f"🔧 tools: {', '.join(tools_used)}")
 

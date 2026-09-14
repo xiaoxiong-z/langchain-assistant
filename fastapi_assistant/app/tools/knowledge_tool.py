@@ -9,13 +9,13 @@ from app.rag.retriever import retriever
 # 注意：本工具只检索资料，不直接生成最终回答，也不执行退款、开票等业务操作。
 @tool
 def search_knowledge_base(question: str) -> str:
-    """查询 Atguigu Assistant 客服知识库。
+    """查询 团队知识平台 客服知识库。
 
     当用户询问套餐、额度、成员权限、数据保留、退款、发票、企业版支持等
-    Atguigu Assistant 产品/客服问题时使用。
+    团队知识平台 产品/客服问题时使用。
 
     Args:
-        question: 用户关于 Atguigu Assistant 产品或客服规则的问题。
+        question: 用户关于 团队知识平台 产品或客服规则的问题。
     Returns:
         Milvus Top-K 知识片段及其来源信息。
     """

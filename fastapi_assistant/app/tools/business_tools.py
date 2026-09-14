@@ -9,7 +9,7 @@ from langchain_core.tools import tool
 # 返回：天气说明字符串；不支持的城市返回提示，不抛出查询异常。
 @tool
 def get_weather(city: str) -> str:
-    """查询课程案例中的模拟天气数据。
+    """查询内置的模拟天气数据。
 
     Args:
         city: 城市名称，如“北京”“上海”“深圳”等。
@@ -38,7 +38,7 @@ def get_weather(city: str) -> str:
 # 返回：表达式及结果，或错误提示。限制内置函数不等于完整的安全沙箱。
 @tool
 def calculator(expression: str) -> str:
-    """执行课程案例中的数学计算。
+    """执行内置的数学计算。
 
     Args:
         expression: 数学表达式。
@@ -58,7 +58,7 @@ def calculator(expression: str) -> str:
             "pi": math.pi,
             "e": math.e,
         }
-        # 课程原案例采用受限 eval。学习项目保留该思路；不要直接作为生产环境任意表达式执行器。
+        # 当前实现采用受限 eval。学习项目保留该思路；不要直接作为生产环境任意表达式执行器。
         result = eval(expression, {"__builtins__": {}}, safe_functions)
         return f"{expression} = {result}"
     except Exception as exc:
@@ -105,7 +105,7 @@ def get_time_info(query_type: str = "current") -> str:
 # 返回：保留两位小数的换算说明，或不支持币种的提示。
 @tool
 def convert_currency(amount: float, from_curr: str, to_curr: str) -> str:
-    """使用课程案例中的固定汇率表进行货币转换。
+    """使用内置的固定汇率表进行货币转换。
 
     Args:
         amount: 金额数值。
@@ -153,7 +153,7 @@ def convert_currency(amount: float, from_curr: str, to_curr: str) -> str:
 # 返回：换行分隔的匹配文本，或未找到信息的提示。
 @tool
 def search_info(keyword: str, category: str = "all") -> str:
-    """搜索课程案例中的模拟产品/新闻信息。
+    """搜索内置的模拟产品/新闻信息。
 
     Args:
         keyword: 搜索关键词。

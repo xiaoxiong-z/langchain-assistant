@@ -9,7 +9,6 @@ from typing import Any
 def keep_recent_messages(messages: list[dict[str, Any]], max_pairs: int = 3):
     """保留最近 N 轮普通对话。
 
-    来源：第4章 1.6.2 / 1.6.3 的窗口记忆写法。
     每轮 = user + assistant；如果历史中存在 system 消息，则始终保留。
     """
     system_msgs = [m for m in messages if m.get("role") == "system"]

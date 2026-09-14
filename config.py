@@ -9,7 +9,7 @@ load_dotenv(override=True)
 # 当前命令行项目目录；定位知识库时不依赖启动命令所在目录。
 BASE_DIR = Path(__file__).resolve().parent
 
-# 第4章多轮对话项目中的配置思路
+# 多轮对话配置
 # 聊天模型 ID；由服务商识别，与 Embedding 模型独立配置。
 MODEL_NAME = "openrouter/free"
 # 发送给模型的历史窗口参数，按每轮两条普通消息计算；建议为正整数。
@@ -19,7 +19,7 @@ EXIT_WORD = "quit"
 # 命令行清空当前对话历史的口令。
 RESET_WORD = "reset"
 
-# 第10章 Atguigu Assistant RAG 案例配置
+#  团队知识平台 RAG 案例配置
 # Milvus 服务连接地址；该参数不负责启动数据库。
 MILVUS_URI = "http://localhost:19530"
 # Milvus 数据库名称，用于隔离不同知识库集合。

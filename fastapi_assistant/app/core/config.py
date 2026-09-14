@@ -11,11 +11,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 # 默认知识库数据目录。
 DATA_DIR = PROJECT_ROOT / "data"
 
-# ===== 第4章：多轮对话窗口 =====
+# ===== 多轮对话窗口 =====
 # 发送给模型的历史窗口参数，按每轮两条普通消息计算；建议为正整数。
 MAX_PAIRS_HISTORY = int(os.getenv("MAX_PAIRS_HISTORY", "10"))
 
-# ===== 第7章：聊天模型 =====
+# ===== 聊天模型 =====
 # 聊天模型 ID；由服务商识别，与 Embedding 模型独立配置。
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-5.4-mini")
 # 聊天服务密钥；保留历史变量名，也可配置 OpenRouter 等兼容服务。
@@ -23,7 +23,7 @@ CLOSEAI_API_KEY = os.getenv("CLOSEAI_API_KEY")
 # 聊天服务 API 基础地址，需与密钥所属服务匹配。
 CLOSEAI_BASE_URL = os.getenv("CLOSEAI_BASE_URL")
 
-# ===== 第10章：Atguigu Assistant RAG =====
+# ===== 团队知识平台 RAG =====
 # Milvus 服务连接地址；该参数不负责启动数据库。
 MILVUS_URI = os.getenv("MILVUS_URI", "http://localhost:19530")
 # Milvus 数据库名称，用于隔离不同知识库集合。
@@ -43,7 +43,7 @@ SILICONFLOW_BASE_URL = os.getenv("SILICONFLOW_BASE_URL")
 
 # ===== FastAPI 工程扩展 =====
 # 接口文档和首页中显示的服务名称。
-API_TITLE = "Atguigu Enterprise AI Assistant"
+API_TITLE = "Knowledge Assistant API"
 # 接口文档展示的版本号。
 API_VERSION = "2.0.0"
 # 允许跨域请求的前端来源，按逗号拆分并去掉空白；这不是身份认证。

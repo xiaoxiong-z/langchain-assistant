@@ -28,7 +28,7 @@ app = FastAPI(
     title=API_TITLE,
     version=API_VERSION,
     description=(
-        "将课程第4章多轮对话、第7章多功能 Agent、第10章 Atguigu Assistant RAG "
+        "将多轮对话、多功能 Agent、 团队知识平台 RAG "
         "整合为可通过 HTTP 调用的 FastAPI 后端。"
     ),
     lifespan=lifespan,
