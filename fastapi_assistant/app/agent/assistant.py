@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
 
@@ -85,9 +87,10 @@ class AssistantService:
         history: list[dict[str, str]],
         user_input: str,
         summary: str = "",
+        plan: str | None = None,
     ) -> tuple[str, list[str]]:
         """执行一次 Agent 对话并返回最终文本与本轮工具名。"""
-        plan = self.plan_task(user_input)
+        plan = plan or self.plan_task(user_input)
         candidate_history = [{"role": "system", "content": f"本轮执行规划（仅供执行参考，必须以工具结果为准）：\n{plan}"}] + ([{"role": "system", "content": f"此前会话摘要：{summary}"}] if summary else []) + history + [{"role": "user", "content": user_input}]
         memory_messages = keep_recent_messages(
             candidate_history,
@@ -137,9 +140,21 @@ class AssistantService:
         return content if isinstance(content, str) else str(content)
 
     def plan_task(self, user_input: str) -> str:
-        """生成最多四步的执行计划，仅用于指导工具顺序。"""
-        prompt = ("你是任务规划器。将用户请求拆成最多 4 个执行步骤，说明目标和可能使用的工具。"
-                  "简单问题只输出‘直接回答’。不要回答问题、不要编造事实。\n用户请求：" + user_input)
+        """Planner：生成结构化 JSON 计划，供 Executor 组织执行。"""
+        prompt = ("你是 Planner。将用户请求拆成最多 4 个步骤，只输出 JSON："
+                  '{"goal":"...","steps":[{"step":1,"action":"...","tool":"none"}]}。'
+                  "tool 只能填写工具名或 none；简单问题 steps 只保留一步。不要回答问题、不要编造事实。\n用户请求：" + user_input)
         result = self.model.invoke([{"role": "user", "content": prompt}])
         content = getattr(result, "content", result)
-        return content if isinstance(content, str) else str(content)
+        text = content if isinstance(content, str) else str(content)
+        try:
+            plan = json.loads(text)
+            if not isinstance(plan, dict) or not isinstance(plan.get("steps"), list):
+                raise ValueError
+            return json.dumps(plan, ensure_ascii=False)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return json.dumps({"goal": user_input, "steps": [{"step": 1, "action": "直接回答", "tool": "none"}]}, ensure_ascii=False)
+
+    def execute_plan(self, plan: str, history: list[dict[str, str]], user_input: str, summary: str = ""):
+        """Executor：将结构化计划作为执行上下文，驱动 Agent 调用 Retriever/Tool 并汇总结果。"""
+        return self.chat(history, user_input, summary=summary, plan=plan)
