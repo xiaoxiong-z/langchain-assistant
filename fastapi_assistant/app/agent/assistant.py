@@ -43,6 +43,7 @@ SYSTEM_PROMPT = """你是一名耐心、友好的智能助手，提供知识库�
 3. 总是用友好、专业、自然、清晰的中文回答。
 4. 如果工具返回了数据，要用通俗易懂的语言解释给用户。
 5. 如果无法完成任务，诚实地告诉用户原因。
+6. 对复杂请求先拆分步骤并按顺序执行，简单问题直接回答；计划仅用于组织执行。
 """
 
 
@@ -86,7 +87,8 @@ class AssistantService:
         summary: str = "",
     ) -> tuple[str, list[str]]:
         """执行一次 Agent 对话并返回最终文本与本轮工具名。"""
-        candidate_history = history + [{"role": "user", "content": user_input}]
+        plan = self.plan_task(user_input)
+        candidate_history = [{"role": "system", "content": f"本轮执行规划（仅供执行参考，必须以工具结果为准）：\n{plan}"}] + ([{"role": "system", "content": f"此前会话摘要：{summary}"}] if summary else []) + history + [{"role": "user", "content": user_input}]
         memory_messages = keep_recent_messages(
             candidate_history,
             max_pairs=MAX_PAIRS_HISTORY,
@@ -114,7 +116,8 @@ class AssistantService:
 
     def stream_chat(self, history: list[dict[str, str]], user_input: str, summary: str = ""):
         """流式执行 Agent，逐段返回文本；工具调用期间可能暂时没有文本片段。"""
-        candidate_history = ([{"role": "system", "content": f"此前会话摘要：{summary}"}] if summary else []) + history + [{"role": "user", "content": user_input}]
+        plan = self.plan_task(user_input)
+        candidate_history = [{"role": "system", "content": f"本轮执行规划（仅供执行参考，必须以工具结果为准）：\n{plan}"}] + ([{"role": "system", "content": f"此前会话摘要：{summary}"}] if summary else []) + history + [{"role": "user", "content": user_input}]
         memory_messages = keep_recent_messages(candidate_history, max_pairs=MAX_PAIRS_HISTORY)
         full_text = []
         for chunk, _metadata in self.agent.stream(
@@ -129,6 +132,14 @@ class AssistantService:
         """压缩旧消息，保留关键事实、偏好、决定和未解决问题。"""
         transcript = "\n".join(f"{m.get('role')}: {m.get('content', '')}" for m in messages)
         prompt = "请将下面的多轮对话压缩成简洁中文摘要，保留关键事实、用户偏好、已做决定、待办和未解决问题。不要编造信息，只输出摘要。\n已有摘要：" + (existing_summary or "无") + "\n对话：\n" + transcript
+        result = self.model.invoke([{"role": "user", "content": prompt}])
+        content = getattr(result, "content", result)
+        return content if isinstance(content, str) else str(content)
+
+    def plan_task(self, user_input: str) -> str:
+        """生成最多四步的执行计划，仅用于指导工具顺序。"""
+        prompt = ("你是任务规划器。将用户请求拆成最多 4 个执行步骤，说明目标和可能使用的工具。"
+                  "简单问题只输出‘直接回答’。不要回答问题、不要编造事实。\n用户请求：" + user_input)
         result = self.model.invoke([{"role": "user", "content": prompt}])
         content = getattr(result, "content", result)
         return content if isinstance(content, str) else str(content)
