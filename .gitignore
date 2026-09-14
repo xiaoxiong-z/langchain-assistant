@@ -12,3 +12,4 @@ venv/
 /*_langchain_fastapi_assistant/
 
 fastapi_assistant_legacy/
+fastapi_assistant/users.db
