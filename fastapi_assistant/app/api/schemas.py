@@ -36,6 +36,7 @@ class ChatResponse(BaseModel):
     tools_used: list[str]
     # 当前会话累计保存的对话轮数，不是窗口截取后的轮数。
     history_pairs: int
+    summary_active: bool = False
 
 
 class DeleteSessionResponse(BaseModel):

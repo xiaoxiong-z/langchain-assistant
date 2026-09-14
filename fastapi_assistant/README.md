@@ -55,3 +55,6 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ## 使用边界
 
 登录账号保存在本地 SQLite，令牌和会话目前存在进程内存中，自动重载会清空登录状态；天气、汇率与产品/新闻搜索为模拟数据；当前没有请求限流，生产环境应使用 HTTPS、持久化令牌和 Redis/数据库。
+### 会话记忆与摘要
+
+每个 `session_id` 独立保存对话历史。服务默认保留最近 `MAX_PAIRS_HISTORY` 轮发送给模型；当历史达到 `SUMMARY_TRIGGER_PAIRS` 轮时，自动调用聊天模型生成摘要，仅保留最近 `SUMMARY_KEEP_PAIRS` 轮，并将摘要作为系统上下文继续对话。同步 `/chat` 与 SSE `/chat/stream` 共用这套机制。可在 `.env` 中调整三个参数。

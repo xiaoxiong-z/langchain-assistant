@@ -14,6 +14,8 @@ DATA_DIR = PROJECT_ROOT / "data"
 # ===== 多轮对话窗口 =====
 # 发送给模型的历史窗口参数，按每轮两条普通消息计算；建议为正整数。
 MAX_PAIRS_HISTORY = int(os.getenv("MAX_PAIRS_HISTORY", "10"))
+SUMMARY_TRIGGER_PAIRS = int(os.getenv("SUMMARY_TRIGGER_PAIRS", "12"))
+SUMMARY_KEEP_PAIRS = int(os.getenv("SUMMARY_KEEP_PAIRS", "4"))
 
 # ===== 聊天模型 =====
 # 聊天模型 ID；由服务商识别，与 Embedding 模型独立配置。

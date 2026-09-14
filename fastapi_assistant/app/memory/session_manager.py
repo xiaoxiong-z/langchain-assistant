@@ -12,6 +12,7 @@ class SessionState:
     session_id: str
     # 当前会话的消息列表；default_factory 保证各会话独立创建列表。
     messages: list[dict[str, str]] = field(default_factory=list)
+    summary: str = ""
     # 创建时间（会话管理器使用 UTC）。
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     # 最近一次成功保存聊天结果的 UTC 时间。

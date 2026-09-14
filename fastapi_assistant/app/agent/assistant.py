@@ -8,6 +8,7 @@ from app.core.config import (
     CLOSEAI_BASE_URL,
     MAX_PAIRS_HISTORY,
     MODEL_NAME,
+    SUMMARY_KEEP_PAIRS,
 )
 from app.memory.window import keep_recent_messages
 from app.tools.business_tools import (
@@ -58,6 +59,7 @@ class AssistantService:
             api_key=CLOSEAI_API_KEY,
             base_url=CLOSEAI_BASE_URL,
         )
+        self.model = model
         tools = [
             get_weather,
             calculator,
@@ -80,6 +82,7 @@ class AssistantService:
         self,
         history: list[dict[str, str]],
         user_input: str,
+        summary: str = "",
     ) -> tuple[str, list[str]]:
         """执行一次 Agent 对话并返回最终文本与本轮工具名。"""
         candidate_history = history + [{"role": "user", "content": user_input}]
@@ -108,9 +111,9 @@ class AssistantService:
 
         return final_content, tools_used
 
-    def stream_chat(self, history: list[dict[str, str]], user_input: str):
+    def stream_chat(self, history: list[dict[str, str]], user_input: str, summary: str = ""):
         """流式执行 Agent，逐段返回文本；工具调用期间可能暂时没有文本片段。"""
-        candidate_history = history + [{"role": "user", "content": user_input}]
+        candidate_history = ([{"role": "system", "content": f"此前会话摘要：{summary}"}] if summary else []) + history + [{"role": "user", "content": user_input}]
         memory_messages = keep_recent_messages(candidate_history, max_pairs=MAX_PAIRS_HISTORY)
         full_text = []
         for chunk, _metadata in self.agent.stream(
@@ -120,3 +123,11 @@ class AssistantService:
             if isinstance(content, str) and content:
                 full_text.append(content)
                 yield content
+
+    def summarize_history(self, messages: list[dict[str, str]], existing_summary: str = "") -> str:
+        """压缩旧消息，保留关键事实、偏好、决定和未解决问题。"""
+        transcript = "\n".join(f"{m.get('role')}: {m.get('content', '')}" for m in messages)
+        prompt = "请将下面的多轮对话压缩成简洁中文摘要，保留关键事实、用户偏好、已做决定、待办和未解决问题。不要编造信息，只输出摘要。\n已有摘要：" + (existing_summary or "无") + "\n对话：\n" + transcript
+        result = self.model.invoke([{"role": "user", "content": prompt}])
+        content = getattr(result, "content", result)
+        return content if isinstance(content, str) else str(content)

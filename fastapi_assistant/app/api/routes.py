@@ -20,6 +20,7 @@ from app.core.config import (
     CLOSEAI_BASE_URL,
     SILICONFLOW_API_KEY,
     SILICONFLOW_BASE_URL,
+    SUMMARY_TRIGGER_PAIRS, SUMMARY_KEEP_PAIRS,
 )
 from app.memory.session_manager import SessionManager
 from app.rag.retriever import retriever
@@ -29,6 +30,11 @@ session_manager = SessionManager()
 
 _assistant_service: AssistantService | None = None
 _assistant_init_lock = Lock()
+
+def _compact_session(session, service: AssistantService) -> None:
+    if session.history_pairs >= SUMMARY_TRIGGER_PAIRS:
+        session.summary = service.summarize_history(session.messages, session.summary)
+        session.messages = session.messages[-SUMMARY_KEEP_PAIRS * 2:]
 
 @router.post("/register", response_model=AuthResponse, status_code=201, tags=["auth"])
 def register_user(request: AuthRequest) -> AuthResponse:
@@ -130,9 +136,11 @@ def chat(request: ChatRequest, authorization: str | None = Header(default=None))
     with session.lock:
         try:
             assistant_service = get_assistant_service()
+            _compact_session(session, assistant_service)
             answer, tools_used = assistant_service.chat(
                 history=session.messages,
                 user_input=request.message,
+                summary=session.summary,
             )
         except RuntimeError as exc:
             # 例如：聊天模型未配置，或用户触发 RAG Tool 但知识库尚未就绪。
@@ -149,6 +157,7 @@ def chat(request: ChatRequest, authorization: str | None = Header(default=None))
             answer=answer,
             tools_used=tools_used,
             history_pairs=session.history_pairs,
+            summary_active=bool(session.summary),
         )
 
 
@@ -167,7 +176,8 @@ def chat_stream(request: ChatRequest, authorization: str | None = Header(default
         try:
             with session.lock:
                 service = get_assistant_service()
-                for text in service.stream_chat(session.messages, request.message):
+                _compact_session(session, service)
+                for text in service.stream_chat(session.messages, request.message, session.summary):
                     parts.append(text)
                     yield f"data: {json.dumps({'type': 'token', 'content': text}, ensure_ascii=False)}\n\n"
                 answer = "".join(parts)
@@ -176,7 +186,7 @@ def chat_stream(request: ChatRequest, authorization: str | None = Header(default
                     {"role": "assistant", "content": answer},
                 ])
                 session.updated_at = datetime.now(timezone.utc)
-                yield f"data: {json.dumps({'type': 'done', 'history_pairs': session.history_pairs}, ensure_ascii=False)}\n\n"
+                yield f"data: {json.dumps({'type': 'done', 'history_pairs': session.history_pairs, 'summary_active': bool(session.summary)}, ensure_ascii=False)}\n\n"
         except Exception as exc:
             yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)}, ensure_ascii=False)}\n\n"
 
