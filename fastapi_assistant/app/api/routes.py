@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 from threading import Lock
 
 from fastapi import APIRouter, HTTPException, status, Header
+from fastapi.responses import StreamingResponse
+import json
 
 from app.agent.assistant import AssistantService
 from app.api.schemas import (
@@ -148,3 +150,34 @@ def chat(request: ChatRequest, authorization: str | None = Header(default=None))
             tools_used=tools_used,
             history_pairs=session.history_pairs,
         )
+
+
+@router.post("/chat/stream", tags=["chat"])
+def chat_stream(request: ChatRequest, authorization: str | None = Header(default=None)):
+    """以 SSE 推送回答片段；每条 data 是 JSON，结束事件为 done。"""
+    token = authorization.removeprefix("Bearer ").strip() if authorization else None
+    if username_from_token(token) is None:
+        raise HTTPException(status_code=401, detail="请先登录")
+    session = session_manager.get(request.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="会话不存在，请先调用 POST /sessions")
+
+    def events():
+        parts: list[str] = []
+        try:
+            with session.lock:
+                service = get_assistant_service()
+                for text in service.stream_chat(session.messages, request.message):
+                    parts.append(text)
+                    yield f"data: {json.dumps({'type': 'token', 'content': text}, ensure_ascii=False)}\n\n"
+                answer = "".join(parts)
+                session.messages.extend([
+                    {"role": "user", "content": request.message},
+                    {"role": "assistant", "content": answer},
+                ])
+                session.updated_at = datetime.now(timezone.utc)
+                yield f"data: {json.dumps({'type': 'done', 'history_pairs': session.history_pairs}, ensure_ascii=False)}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

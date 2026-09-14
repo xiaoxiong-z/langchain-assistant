@@ -26,6 +26,7 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 | GET | `/api/v1/health` | 配置、检索器状态及会话数量 |
 | POST | `/api/v1/sessions` | 创建会话 |
 | POST | `/api/v1/chat` | 对话 |
+| POST | `/api/v1/chat/stream` | SSE 流式对话 |
 | DELETE | `/api/v1/sessions/{session_id}` | 删除会话 |
 
 先创建会话，再把返回的 ID 填入聊天请求：
@@ -38,6 +39,8 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 响应中 `answer` 为回答，`tools_used` 为工具调用名称，`history_pairs` 为累计保存的轮数。同一 ID 支持连续追问。
+
+`/api/v1/chat/stream` 返回 `text/event-stream`：`type=token` 事件携带文本片段，`type=done` 表示本轮完成，`type=error` 表示异常。网页 `/app` 已默认使用该接口。
 
 ## 模块职责
 

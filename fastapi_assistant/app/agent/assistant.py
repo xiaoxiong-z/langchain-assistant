@@ -107,3 +107,16 @@ class AssistantService:
                 break
 
         return final_content, tools_used
+
+    def stream_chat(self, history: list[dict[str, str]], user_input: str):
+        """流式执行 Agent，逐段返回文本；工具调用期间可能暂时没有文本片段。"""
+        candidate_history = history + [{"role": "user", "content": user_input}]
+        memory_messages = keep_recent_messages(candidate_history, max_pairs=MAX_PAIRS_HISTORY)
+        full_text = []
+        for chunk, _metadata in self.agent.stream(
+            {"messages": memory_messages}, stream_mode="messages"
+        ):
+            content = getattr(chunk, "content", "")
+            if isinstance(content, str) and content:
+                full_text.append(content)
+                yield content
