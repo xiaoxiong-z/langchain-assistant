@@ -16,6 +16,16 @@ class ChatRequest(BaseModel):
     # 本轮输入文本，长度为 1～4000 字符；当前没有额外剔除纯空白输入。
     message: str = Field(min_length=1, max_length=4000)
 
+class AuthRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=40)
+    password: str = Field(min_length=6, max_length=200)
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+    session_id: str
+
 
 class ChatResponse(BaseModel):
     # 会话唯一标识，用于关联后续请求与对应的历史记录。

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from threading import Lock
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Header
 
 from app.agent.assistant import AssistantService
 from app.api.schemas import (
@@ -10,7 +10,9 @@ from app.api.schemas import (
     CreateSessionResponse,
     DeleteSessionResponse,
     HealthResponse,
+    AuthRequest, AuthResponse,
 )
+from app.auth import authenticate, issue_token, register, username_from_token
 from app.core.config import (
     CLOSEAI_API_KEY,
     CLOSEAI_BASE_URL,
@@ -25,6 +27,22 @@ session_manager = SessionManager()
 
 _assistant_service: AssistantService | None = None
 _assistant_init_lock = Lock()
+
+@router.post("/register", response_model=AuthResponse, status_code=201, tags=["auth"])
+def register_user(request: AuthRequest) -> AuthResponse:
+    try:
+        register(request.username, request.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    session = session_manager.create()
+    return AuthResponse(access_token=issue_token(request.username), username=request.username, session_id=session.session_id)
+
+@router.post("/login", response_model=AuthResponse, tags=["auth"])
+def login_user(request: AuthRequest) -> AuthResponse:
+    if not authenticate(request.username, request.password):
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    session = session_manager.create()
+    return AuthResponse(access_token=issue_token(request.username), username=request.username, session_id=session.session_id)
 
 
 # 作用：首次需要聊天时才创建 Agent，并复用同一服务实例。
@@ -97,7 +115,10 @@ def delete_session(session_id: str) -> DeleteSessionResponse:
 # 返回：ChatResponse，包含回答、工具名和累计历史轮数。
 # 错误状态：会话缺失为 404，RuntimeError 为 503，其他调用异常为 500。
 @router.post("/chat", response_model=ChatResponse, tags=["chat"])
-def chat(request: ChatRequest) -> ChatResponse:
+def chat(request: ChatRequest, authorization: str | None = Header(default=None)) -> ChatResponse:
+    token = authorization.removeprefix("Bearer ").strip() if authorization else None
+    if username_from_token(token) is None:
+        raise HTTPException(status_code=401, detail="请先登录")
     session = session_manager.get(request.session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="会话不存在，请先调用 POST /sessions")

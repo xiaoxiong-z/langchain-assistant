@@ -6,6 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
 from app.core.config import API_TITLE, API_VERSION, CORS_ORIGINS
 from app.rag.retriever import retriever
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
 
 
 # 作用：管理 FastAPI 启动阶段，连接已有知识库；失败时允许服务降级启动。
@@ -43,6 +46,7 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="/api/v1")
+app.mount("/static", StaticFiles(directory=Path(__file__).parent / "web"), name="static")
 
 
 # 作用：提供服务首页信息；参数：无。
@@ -55,3 +59,7 @@ def root():
         "docs": "/docs",
         "health": "/api/v1/health",
     }
+
+@app.get("/app", include_in_schema=False)
+def web_app():
+    return FileResponse(Path(__file__).parent / "web" / "index.html")
