@@ -13,6 +13,8 @@ python -m scripts.build_knowledge_base
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
+启动后访问 `http://127.0.0.1:8000/app`，可直接注册、登录并聊天；接口调试页仍在 `/docs`。用户密码保存在本地 `users.db`，登录令牌和会话目前保存在进程内存中，适合本地演示。
+
 聊天模型需支持工具调用，文档与查询应使用相同 Embedding 模型及维度。已有匹配的知识库时可跳过建库。
 
 ## 接口
